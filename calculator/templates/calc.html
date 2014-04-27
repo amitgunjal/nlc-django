@@ -1,0 +1,18 @@
+{% load staticfiles %}
+
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href={% static "calculator/css/styles.css" %}>
+</head>
+<body>
+    <div id="calculator-wrapper">
+        <h1>Natural Language Calculator</h1>
+        <h3>Enter a phrase to calculate</h3>
+        <form id="calculator" action="" method="post"> {% csrf_token %}
+            <input type="text" id="user-input" name="user-input">
+            <input type="submit" value="Calculate"><br>
+            <p id="answer">{{ evaluation }}</p>
+        </form>
+    </div>
+</body>
+</html>

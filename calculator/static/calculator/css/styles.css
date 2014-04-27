@@ -1,0 +1,22 @@
+body {
+    background-color: LightSkyBlue;    
+}
+
+form {
+    display: inline-block;
+}
+
+#user-input {
+    height: 40px;
+    width: 500px;
+    font-size: 24px;
+}
+
+#calculator-wrapper {
+    text-align: center;
+}
+
+#answer {
+    padding-top: 8px;
+    font-size: 24px;
+}
