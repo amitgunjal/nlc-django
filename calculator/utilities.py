@@ -76,53 +76,16 @@ def process_string(user_input):
     Process user input. Return processed input and value to which it
     evaluates.
     '''
-    raw_token_list = split_tokens(user_input)
+    token_list = split_tokens(user_input)
     # Convert alphabetic strings to corresponding digits
-    token_list = alphabetic_to_digit(raw_token_list)
-    merge_decimals(token_list)
     combined_token_list = combine(token_list)
-    print(combined_token_list)
     processed_input = ''.join(combined_token_list)
     try:
         evaluation = eval(processed_input)
     except:
         evaluation = None
     return processed_input, evaluation
-    
-def merge_decimals(tokens):
-    '''
-    Merge numbers following a decimal into the preceding number. Use a zero
-    if there is no preceding number.
-    '''
-    i = 0
-    while i < len(tokens) - 1:
-        if tokens[i] == '.':
-            decimals = ''
-            while i+1 < len(tokens) and tokens[i+1].isdigit():
-                decimals += tokens[i+1]
-                del tokens[i+1]
-            if i > 0 and tokens[i-1].isdigit():
-                tokens[i-1] += '.{0}'.format(decimals)
-                del tokens[i]
-                i -= 1
-            else:
-                tokens[i] = '0.{0}'.format(decimals)
-        i += 1
 
-def alphabetic_to_digit(raw_tokens):
-    '''
-    Convert alphabetic number representations into digits.
-    '''
-    token_list = []
-    for token in raw_tokens:
-        for group in NUMBERS:
-            if token in group:
-                token_list.append(group[token])
-                break
-        else:
-            token_list.append(token)
-    return token_list
-    
 def combine(tokens):
     '''
     Find the smallest number in list of token strings with a smaller
@@ -182,9 +145,19 @@ def split_tokens(user_input):
     '''
     token_list = []
     token = ''
+    valid_token = False
     for index, char in enumerate(user_input):
         token += char.lower()
-        if token in DIGITS:
+        if (index == len(user_input) - 1 or
+            token in TEENS or
+            token in TENS or
+            token in LARGER or
+            token in OPERATORS.values()):
+            valid_token = True
+        elif token in OPERATORS:
+            token = OPERATORS[token]
+            valid_token = True
+        elif token in DIGITS:
             # Need to handle overlaps like "seventy" or "fourteen"
             try:
                 if ((token + 'teen' in TEENS and
@@ -197,36 +170,43 @@ def split_tokens(user_input):
             except IndexError:
                 pass
             else:
-                token_list.append(token)
-                token = ''
-        elif token in TEENS or token in TENS or token in LARGER:
-            token_list.append(token)
-            token = ''
-        elif token in TERMS:
-           token_list.append(token)
-           token = ''
-        elif token[:-1].replace('.', '').isdigit() and not token[-1].isdigit() and token[-1] != '.':
-            token_list.append(token[:-1])
-            token = token[-1]
-        elif not token[:-1].replace('.', '').isdigit() and (token[-1].isdigit() or token[-1] == '.'):
-            token_list.append(token[:-1])
-            token = token[-1]   
+                valid_token = True
+        elif token[-1].isdigit() and not user_input[index+1].isdigit():
+             valid_token = True
         else:
-            for k, v in OPERATORS.items():
-                if token in (k, v):
-                   token_list.append(v)
-                   token = ''
-                   break               
-        for d in DELIMETERS:
-            if d in token:
-                # String slicing to remove delimiter at the end
-                token = token[:-(len(d))]
-                if len(token):
-                    token_list.append(token)
-                    token = ''
-                    break
-            elif index == len(user_input) - 1 and len(token):
-                token_list.append(token)
-                token = ''
-                break
+            for d in DELIMETERS:
+                if d in token:
+                    # String slicing to remove delimiter at the end
+                    token = token[:-(len(d))]
+                    if len(token):
+                        valid_token = True
+                        break
+        if valid_token:
+            add_token(token_list, token)
+            token = ''
+            valid_token = False
     return token_list
+    
+def add_token(token_list, token):
+    for group in NUMBERS:
+        if token in group:
+            token = group[token]
+            break
+    # decimals
+    if (len(token_list) > 1 and token_list[-2] == '.'
+    and token_list[-1].isdigit() and token.isdigit()):
+        # if the decimal place for token is smaller than the previous number and all
+        # of the matching digits on the previous token are zeros, then we merge our
+        # current decimal with the larger preceding one
+        if len(token_list[-1]) > len(token) and token_list[-1][-len(token):].count('0') >= len(token):
+            print(token)
+            prev = list(token_list[-1])
+            start = -len(token)
+            for i in range(start, 0, 1):
+                prev[i] = token[i-start]
+            token_list[-1] = ''.join(prev)
+        # otherwise we append it 
+        else:
+            token_list[-1] += token
+    else:
+        token_list.append(token)
