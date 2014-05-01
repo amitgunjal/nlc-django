@@ -2,6 +2,9 @@
 Natural language calculator by Evan Fredericksen
 '''
 
+import re
+from calculator import constants
+
 DELIMETERS = [' ', 'and']
 
 DIGITS = {
@@ -77,6 +80,7 @@ def process_string(user_input):
     evaluates.
     '''
     token_list = split_tokens(user_input)
+    # print(token_list)
     # Convert alphabetic strings to corresponding digits
     combined_token_list = combine(token_list)
     processed_input = ''.join(combined_token_list)
@@ -145,6 +149,8 @@ def split_tokens(user_input):
     '''
     token_list = []
     token = ''
+    unit_map = {}
+    previous = None
     valid_token = False
     for index, char in enumerate(user_input):
         token += char.lower()
@@ -182,31 +188,49 @@ def split_tokens(user_input):
                         valid_token = True
                         break
         if valid_token:
-            add_token(token_list, token)
+            for group in NUMBERS:
+                if token in group:
+                    token = group[token]
+                    break
+            add_token(token_list, token, unit_map, previous)
+            previous = token
             token = ''
             valid_token = False
     return token_list
     
-def add_token(token_list, token):
-    for group in NUMBERS:
-        if token in group:
-            token = group[token]
-            break
-    # decimals
-    if (len(token_list) > 1 and token_list[-2] == '.'
-    and token_list[-1].isdigit() and token.isdigit()):
-        # if the decimal place for token is smaller than the previous number and all
+def add_token(token_list, token, unit_map, previous):
+    try:
+        if token_list[-1].isdigit() and token == '.':
+            token_list[-1] += '.'
+            return
+    except IndexError:
+        pass
+    if (len(token_list) >= 1 and token_list[-1].count('.') == 1 and
+    token_list[-1].replace('.', '').isdigit() and token.isdigit()):
+        # if the decimal place for token is less than the previous number and all
         # of the matching digits on the previous token are zeros, then we merge our
-        # current decimal with the larger preceding one
-        if len(token_list[-1]) > len(token) and token_list[-1][-len(token):].count('0') >= len(token):
-            print(token)
-            prev = list(token_list[-1])
+        # current decimal value with the larger preceding one
+        s = token_list[-1].split('.')
+        if len(s[1]) > len(token) and s[1][-len(token):].count('0') >= len(token):
+            prev = list(s[1])
             start = -len(token)
             for i in range(start, 0, 1):
                 prev[i] = token[i-start]
-            token_list[-1] = ''.join(prev)
-        # otherwise we append it 
+            s[1] = ''.join(prev)
         else:
-            token_list[-1] += token
+            # otherwise we append
+            s[1] += token
+        token_list[-1] = '.'.join(s)
     else:
-        token_list.append(token)
+        try:
+            if previous != None and float(token) > float(previous):
+                if '.' in token or '.' in previous:
+                    token_list[-1] = str(float(token_list[-1]) * float(token))
+                else:
+                    token_list[-1] = str(int(token_list[-1]) * int(token))
+            else:    
+                token_list.append(token)
+        except ValueError:
+            token_list.append(token)
+    print(token_list)
+            
