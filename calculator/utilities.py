@@ -89,6 +89,9 @@ def process_string(user_input):
     except:
         evaluation = None
     return processed_input, evaluation
+    
+def get_unit_dictionary(tokens):
+    pass
 
 def combine(tokens):
     '''
@@ -149,7 +152,6 @@ def split_tokens(user_input):
     '''
     token_list = []
     token = ''
-    unit_map = {}
     previous = None
     valid_token = False
     for index, char in enumerate(user_input):
@@ -192,13 +194,13 @@ def split_tokens(user_input):
                 if token in group:
                     token = group[token]
                     break
-            add_token(token_list, token, unit_map, previous)
+            add_token(token_list, token, previous)
             previous = token
             token = ''
             valid_token = False
     return token_list
     
-def add_token(token_list, token, unit_map, previous):
+def add_token(token_list, token, previous):
     try:
         if token_list[-1].isdigit() and token == '.':
             token_list[-1] += '.'
@@ -221,16 +223,20 @@ def add_token(token_list, token, unit_map, previous):
             # otherwise we append
             s[1] += token
         token_list[-1] = '.'.join(s)
-    else:
+    else: 
         try:
             if previous != None and float(token) > float(previous):
                 if '.' in token or '.' in previous:
                     token_list[-1] = str(float(token_list[-1]) * float(token))
                 else:
                     token_list[-1] = str(int(token_list[-1]) * int(token))
-            else:    
+            elif previous != None and float(previous) < 100 and float(token)< float(previous):
+                if '.' in token or '.' in previous:
+                    token_list[-1] = str(float(token_list[-1]) + float(token))
+                else:
+                    token_list[-1] = str(int(token_list[-1]) + int(token))
+            else:
                 token_list.append(token)
         except ValueError:
             token_list.append(token)
-    print(token_list)
             
