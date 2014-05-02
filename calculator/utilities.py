@@ -80,7 +80,6 @@ def process_string(user_input):
     evaluates.
     '''
     token_list = split_tokens(user_input)
-    # print(token_list)
     # Convert alphabetic strings to corresponding digits
     combined_token_list = combine(token_list)
     processed_input = ''.join(combined_token_list)
@@ -95,55 +94,19 @@ def get_unit_dictionary(tokens):
 
 def combine(tokens):
     '''
-    Find the smallest number in list of token strings with a smaller
-    adjacent number. Multiply that number by the sum of smaller numbers
-    on the left and add that to the sum of smaller numbers on the
-    right. Run recursively until no consecutive numbers remain.
+    Add adjacent numbers together. Return updated list.
     '''
-    consecutive = False
-    count = 0
-    for t in tokens:
-        if t.isdigit():
-            if consecutive:
-                count += 1
-            consecutive = True
+    combined = []
+    for token in tokens:
+        if (len(combined) > 0 and combined[-1].replace('.', '').isdigit()
+        and token.replace('.', '').isdigit()):
+            if '.' in combined[-1] or '.' in token:
+                combined[-1] = str(float(combined[-1]) + float(token))
+            else:
+                combined[-1] = str(int(combined[-1]) + int(token))
         else:
-            consecutive = False
-    # base case
-    if count <= 0:
-        return tokens
-    else:
-        smallest = None
-        for index, t in enumerate(tokens):
-            if t.replace('.', '').isdigit():
-                if ((index > 0 and tokens[index-1].replace('.', '').isdigit() and float(tokens[index-1]) <= float(t)) or
-                (index < len(tokens) - 1 and tokens[index+1].replace('.', '').isdigit() and float(tokens[index+1]) <= float(t))):
-                    if smallest is None:
-                        smallest = int(t)
-                    elif int(t) < smallest:
-                        smallest = int(t)
-        index = tokens.index(str(smallest))
-        right_sum = 0
-        while (index < len(tokens) - 1 and tokens[index+1].replace('.', '').isdigit() and
-        smallest >= float(tokens[index+1])):
-            try:
-                right_sum += int(tokens[index+1])
-            except ValueError:
-                right_sum += float(tokens[index+1])
-            del tokens[index+1]
-        left_sum = 0
-        while (index > 0 and tokens[index-1].replace('.', '').isdigit() and
-        smallest >= float(tokens[index-1])):
-            try:
-                left_sum += int(tokens[index-1])
-            except ValueError:
-                right_sum += float(tokens[index+1])
-            del tokens[index-1]
-            index -= 1
-        if left_sum == 0:
-            left_sum = 1
-        tokens[index] = str(int(tokens[index]) * left_sum + right_sum)
-        return combine(tokens)
+            combined.append(token)       
+    return combined
 
 def split_tokens(user_input):
     '''
