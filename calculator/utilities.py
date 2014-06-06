@@ -164,6 +164,7 @@ def split_tokens(user_input):
     return token_list
     
 def add_token(token_list, token, previous):
+    print(token_list)
     try:
         if token_list[-1].isdigit() and token == '.':
             token_list[-1] += '.'
