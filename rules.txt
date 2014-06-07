@@ -1,0 +1,15 @@
+4 104 = bad
+four thousand 99 = 4099
+4 1000 490 99 = bad
+4 300 = bad
+4 130 = bad
+4 100 30 = 430
+4 100 20 8 = 428
+40 3 100 = 4300
+
+DA RULES:
+	* No consecutive numbers consisting of digits
+    * Any number that is larger than the preceding number must begin with "1", followed by 2+ zeroes
+    * No overlap of places in a decreasing sequence of numbers ie:
+    	430 77 is bad
+    	400 77 and 430 7 are both fine

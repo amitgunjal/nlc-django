@@ -7,7 +7,7 @@ from calculator import utilities
 
 def home(request):
     submission = request.POST.get('user-input', '')
-    evaluation, output = utilities.process_string(submission)
+    output = utilities.process_string(submission)
     if output is None:
         outstring = 'Unable to evaluate your input. Please try again.'
     else:

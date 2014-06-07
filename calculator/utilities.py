@@ -87,7 +87,7 @@ def process_string(user_input):
         evaluation = eval(processed_input)
     except:
         evaluation = None
-    return processed_input, evaluation
+    return evaluation
     
 def get_unit_dictionary(tokens):
     pass
@@ -114,16 +114,18 @@ def split_tokens(user_input):
     easier processing.
     '''
     token_list = []
+    input_list = []
     token = ''
     previous = None
     valid_token = False
     for index, char in enumerate(user_input):
         token += char.lower()
-        if (index == len(user_input) - 1 or
-            token in TEENS or
-            token in TENS or
-            token in LARGER or
-            token in OPERATORS.values()):
+        if index == len(user_input) - 1:
+            valid_token = True
+        elif (token in TEENS or
+             token in TENS or
+             token in LARGER or
+             token in OPERATORS.values()):
             valid_token = True
         elif token in OPERATORS:
             token = OPERATORS[token]
@@ -153,18 +155,63 @@ def split_tokens(user_input):
                         valid_token = True
                         break
         if valid_token:
-            for group in NUMBERS:
-                if token in group:
-                    token = group[token]
-                    break
+            input_list.append(token)
+            token = word_to_number(token)
             add_token(token_list, token, previous)
             previous = token
             token = ''
             valid_token = False
+    valid = verify_input(input_list)
+    if not valid: return []
     return token_list
     
+def verify_input(input_list):
+    '''
+    Check user input to verify the following:
+    * No consecutive numbers consisting of digits
+    * Any number that is larger than the preceding number must begin with "1", followed by at least 2 zeroes
+    * No overlap of places in a decreasing sequence of numbers ie:
+        430 77 is bad
+        400 77 and 430 7 are both fine
+    * Ignore the above when the numbers follow a decimal point
+    '''
+    decimal = False
+    num = ''
+    prev_num = ''
+    for index, token in enumerate(input_list):
+        num = word_to_number(token)
+        if index > 0: prev_num = word_to_number(input_list[index-1])
+        if token == '.': decimal = True
+        if not decimal:
+            # First we look at tokens before they are converted to numerical form
+            if index > 0 and token.replace('.', '').isdigit() and input_list[index-1].replace('.', '').isdigit():
+                return False
+             # Now we look at the numerical form
+            if index > 0 and num.replace('.', '').isdigit():
+                # if this token and the preceding token are numbers:
+                if prev_num.replace('.', '').isdigit():
+                    if float(num) == float(prev_num):
+                        return False
+                    elif float(prev_num) < float(num):
+                        if re.match(r'100+$', num) is None:
+                            return False
+                    elif float(prev_num) > float(num):
+                        if len(prev_num) < 2: return False
+                        if prev_num[-2] == '1': return False
+                        for z in zip(reversed(prev_num), reversed(num)):
+                            if z.count('0') == 0: return False
+
+            else:
+                decimal = False
+    return True
+
+def word_to_number(token):
+    for group in NUMBERS:
+        if token in group:
+            return group[token]
+    return token
+
 def add_token(token_list, token, previous):
-    print(token_list)
     try:
         if token_list[-1].isdigit() and token == '.':
             token_list[-1] += '.'
