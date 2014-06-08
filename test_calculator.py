@@ -77,5 +77,13 @@ class TestCalculator(TestCase):
         result = utilities.process_string(nstring)
         self.assertIsNone(result)
 
+    def test_negative_power(self):
+        nstring = '-(5 + ((1 + 2) ** -4) - 3)'
+        result = utilities.process_string(nstring)
+        self.assertEqual(-2.0123456790123457, result)
 
+    def test_negative_power2(self):
+        nstring = '(-3) ^ 3'
+        result = utilities.process_string(nstring)
+        self.assertEqual(-27, result)
 

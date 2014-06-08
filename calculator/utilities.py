@@ -4,6 +4,8 @@ Natural language calculator by Evan Fredericksen
 
 import re
 from calculator import constants
+from calculator import objects
+from calculator import shunt
 
 DELIMETERS = [' ', 'and']
 
@@ -60,14 +62,16 @@ OPERATORS = {
     'times': '*',
     '\\': '/',
     'over': '/',
-    '^': '**',
+    '^': '^',
     'mod': '%',
     'modulus': '%',
+    'negative': '-',
+}
+OTHER = {
     '(': '(',
     ')': ')',
     'dot': '.',
     'point': '.',
-    'negative': '-',
 }
 
 TERMS = (
@@ -82,12 +86,12 @@ def process_string(user_input):
     token_list = split_tokens(user_input)
     # Convert alphabetic strings to corresponding digits
     combined_token_list = combine(token_list)
-    processed_input = ''.join(combined_token_list)
-    try:
-        evaluation = eval(processed_input)
-    except:
-        evaluation = None
-    return evaluation
+    rpn = shunt.infix_to_rpn(combined_token_list)
+    evaluation = shunt.evaluate_rpn(rpn)
+    if evaluation is None: return None
+    evaluation = str(evaluation).replace('(', '').replace(')', '')
+    if '.' in str(evaluation): return float(evaluation)
+    return int(evaluation)
     
 def get_unit_dictionary(tokens):
     pass
@@ -125,10 +129,14 @@ def split_tokens(user_input):
         elif (token in TEENS or
              token in TENS or
              token in LARGER or
-             token in OPERATORS.values()):
+             token in OPERATORS.values() or
+             token in OTHER.values()):
             valid_token = True
         elif token in OPERATORS:
             token = OPERATORS[token]
+            valid_token = True
+        elif token in OTHER:
+            token = OTHER[token]
             valid_token = True
         elif token in DIGITS:
             # Need to handle overlaps like "seventy" or "fourteen"
@@ -211,42 +219,52 @@ def word_to_number(token):
     return token
 
 def add_token(token_list, token, previous):
-    try:
-        if token_list[-1].isdigit() and token == '.':
-            token_list[-1] += '.'
-            return
-    except IndexError:
-        pass
-    if (len(token_list) >= 1 and token_list[-1].count('.') == 1 and
-    token_list[-1].replace('.', '').isdigit() and token.isdigit()):
-        # if the decimal place for token is less than the previous number and all
-        # of the matching digits on the previous token are zeros, then we merge our
-        # current decimal value with the larger preceding one
-        s = token_list[-1].split('.')
-        if len(s[1]) > len(token) and s[1][-len(token):].count('0') >= len(token):
-            prev = list(s[1])
-            start = -len(token)
-            for i in range(start, 0, 1):
-                prev[i] = token[i-start]
-            s[1] = ''.join(prev)
-        else:
-            # otherwise we append
-            s[1] += token
-        token_list[-1] = '.'.join(s)
-    else: 
+    if (token == '-' and (len(token_list) < 1 or
+                          token_list[-1] == '(' or
+                          token_list[-1] in OPERATORS or
+                          token_list[-1] in OPERATORS.values())):
+        token_list.append('#')
+        return
+    # Convert ** to ^ for Reverse Polish Notation
+    if token == '*' and previous == '*':
+        token_list[-1] = '^'
+    else:
         try:
-            if previous != None and float(token) > float(previous):
-                if '.' in token or '.' in previous:
-                    token_list[-1] = str(float(token_list[-1]) * float(token))
-                else:
-                    token_list[-1] = str(int(token_list[-1]) * int(token))
-            elif previous != None and float(previous) < 100 and float(token)< float(previous):
-                if '.' in token or '.' in previous:
-                    token_list[-1] = str(float(token_list[-1]) + float(token))
-                else:
-                    token_list[-1] = str(int(token_list[-1]) + int(token))
+            if token_list[-1].isdigit() and token == '.':
+                token_list[-1] += '.'
+                return
+        except IndexError:
+            pass
+        if (len(token_list) >= 1 and token_list[-1].count('.') == 1 and
+        token_list[-1].replace('.', '').isdigit() and token.isdigit()):
+            # if the decimal place for token is less than the previous number and all
+            # of the matching digits on the previous token are zeros, then we merge our
+            # current decimal value with the larger preceding one
+            s = token_list[-1].split('.')
+            if len(s[1]) > len(token) and s[1][-len(token):].count('0') >= len(token):
+                prev = list(s[1])
+                start = -len(token)
+                for i in range(start, 0, 1):
+                    prev[i] = token[i-start]
+                s[1] = ''.join(prev)
             else:
+                # otherwise we append
+                s[1] += token
+            token_list[-1] = '.'.join(s)
+        else: 
+            try:
+                if previous != None and float(token) > float(previous):
+                    if '.' in token or '.' in previous:
+                        token_list[-1] = str(float(token_list[-1]) * float(token))
+                    else:
+                        token_list[-1] = str(int(token_list[-1]) * int(token))
+                elif previous != None and float(previous) < 100 and float(token)< float(previous):
+                    if '.' in token or '.' in previous:
+                        token_list[-1] = str(float(token_list[-1]) + float(token))
+                    else:
+                        token_list[-1] = str(int(token_list[-1]) + int(token))
+                else:
+                    token_list.append(token)
+            except ValueError:
                 token_list.append(token)
-        except ValueError:
-            token_list.append(token)
             
