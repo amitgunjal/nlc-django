@@ -169,38 +169,37 @@ def verify_input(input_list):
     '''
     Check user input to verify the following:
     * No consecutive numbers consisting of digits
-    * Any number that is larger than the preceding number must begin with "1", followed by at least 2 zeroes
+    * Any number that is larger than the preceding number must begin with "1", followed exclusively by at least 2 zeroes
     * No overlap of places in a decreasing sequence of numbers ie:
-        430 77 is bad
-        400 77 and 430 7 are both fine
+        "480 77" is bad
+        "400 77" and "480 7" are both fine
+    * Any number containing ten cannot precede a smaller number ie "410 three" is a no go
     * Ignore the above when the numbers follow a decimal point
     '''
     decimal = False
     num = ''
     prev_num = ''
-    for index, token in enumerate(input_list):
+    for index, token in enumerate(input_list[1:], start=1):
         num = word_to_number(token)
-        if index > 0: prev_num = word_to_number(input_list[index-1])
+        prev_num = word_to_number(input_list[index-1])
         if token == '.': decimal = True
         if not decimal:
-            # First we look at tokens before they are converted to numerical form
-            if index > 0 and token.replace('.', '').isdigit() and input_list[index-1].replace('.', '').isdigit():
+            # First we look at tokens before they are converted to numerical form to ensure that they aren't both digit-based
+            if token.replace('.', '').isdigit() and input_list[index-1].replace('.', '').isdigit():
                 return False
              # Now we look at the numerical form
-            if index > 0 and num.replace('.', '').isdigit():
+            if num.replace('.', '').isdigit():
                 # if this token and the preceding token are numbers:
                 if prev_num.replace('.', '').isdigit():
                     if float(num) == float(prev_num):
                         return False
                     elif float(prev_num) < float(num):
-                        if re.match(r'100+$', num) is None:
-                            return False
+                        if re.match(r'100+$', num) is None: return False
                     elif float(prev_num) > float(num):
                         if len(prev_num) < 2: return False
                         if prev_num[-2] == '1': return False
                         for z in zip(reversed(prev_num), reversed(num)):
                             if z.count('0') == 0: return False
-
             else:
                 decimal = False
     return True

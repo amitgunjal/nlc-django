@@ -72,7 +72,6 @@ class TestCalculator(TestCase):
         result = utilities.process_string(nstring)
         self.assertIsNone(result)
 
-
     def test_incorrect_descending3(self):
         nstring = '430 twenty eight'
         result = utilities.process_string(nstring)
